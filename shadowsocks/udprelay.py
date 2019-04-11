@@ -132,11 +132,18 @@ class UDPRelay(object):
     def _get_a_server(self):
         server = self._config['server']
         server_port = self._config['server_port']
-        if type(server_port) == list:
-            server_port = random.choice(server_port)
-        if type(server) == list:
-            server = random.choice(server)
-        logging.debug('chosen server: %s:%d', server, server_port)
+        servers = self._config['upstream']
+        if servers:
+            server_and_password = random.choice(servers)
+            server = server_and_password['server']
+            server_port = server_and_password['server_port']
+            self._password = common.to_bytes(server_and_password['password'])
+
+        # if type(server_port) == list:
+        #     server_port = random.choice(server_port)
+        # if type(server) == list:
+        #     server = random.choice(server)
+        logging.info('chosen server: %s:%d passwd:%s', server, server_port, self._password)
         return server, server_port
 
     def _close_client(self, client):
