@@ -127,9 +127,12 @@ def check_config(config, is_local):
 
     if is_local:
         if config.get('server', None) is None:
-            logging.error('server addr not specified')
-            print_local_help()
-            sys.exit(2)
+            if config.get('upstream', None):
+                config['server'] = '0.0.0.0'
+            else:
+                logging.error('server addr not specified')
+                print_local_help()
+                sys.exit(2)
         else:
             config['server'] = to_str(config['server'])
 
