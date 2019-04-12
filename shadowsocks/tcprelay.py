@@ -128,9 +128,6 @@ class TCPRelayHandler(object):
         # if is_local, this is sslocal
         self._is_local = is_local
         self._stage = STAGE_INIT
-        self._cryptor = cryptor.Cryptor(config['password'],
-                                        config['method'],
-                                        config['crypto_path'])
         self._ota_enable = config.get('one_time_auth', False)
         self._ota_enable_session = self._ota_enable
         self._ota_buff_head = b''
@@ -145,8 +142,12 @@ class TCPRelayHandler(object):
         self._client_address = local_sock.getpeername()[:2]
         self._remote_address = None
         self._forbidden_iplist = config.get('forbidden_ip')
+        self._password = config['password']
         if is_local:
             self._chosen_server = self._get_a_server()
+        self._cryptor = cryptor.Cryptor(self._password,
+                                        config['method'],
+                                        config['crypto_path'])
         fd_to_handlers[local_sock.fileno()] = self
         local_sock.setblocking(False)
         local_sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
