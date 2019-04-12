@@ -43,7 +43,7 @@ def main():
 
     logging.info("starting local at %s:%d" %
                  (config['local_address'], config['local_port']))
-    if config['upstream']:
+    if 'upstream' in config:
         RoundRobin.init(config['upstream'][:])
     dns_resolver = asyncdns.DNSResolver()
     tcp_server = tcprelay.TCPRelay(config, dns_resolver, True)

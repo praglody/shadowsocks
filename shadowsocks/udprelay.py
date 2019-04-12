@@ -73,7 +73,6 @@ from shadowsocks.common import parse_header, pack_addr, onetimeauth_verify, \
     onetimeauth_gen, ONETIMEAUTH_BYTES, ADDRTYPE_AUTH
 from shadowsocks.round_robin import RoundRobin
 
-
 BUF_SIZE = 65536
 
 
@@ -131,19 +130,18 @@ class UDPRelay(object):
         self._stat_callback = stat_callback
 
     def _get_a_server(self):
-        if self._config['upstream']:
+        if 'upstream' in self._config:
             server_and_password = RoundRobin.get_a_server()
-            server = server_and_password['server']
-            server_port = server_and_password['server_port']
-            self._password = common.to_bytes(server_and_password['password'])
+            server = server_and_password[0]
+            server_port = server_and_password[1]
+            self._password = common.to_bytes(server_and_password[2])
         else:
             server = self._config['server']
             server_port = self._config['server_port']
-
-        # if type(server_port) == list:
-        #     server_port = random.choice(server_port)
-        # if type(server) == list:
-        #     server = random.choice(server)
+            if type(server_port) == list:
+                server_port = random.choice(server_port)
+            if type(server) == list:
+                server = random.choice(server)
         logging.debug('chosen server: %s:%d passwd:%s', server, server_port, self._password)
         return server, server_port
 
