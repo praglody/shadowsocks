@@ -71,6 +71,7 @@ import random
 from shadowsocks import cryptor, eventloop, lru_cache, common, shell
 from shadowsocks.common import parse_header, pack_addr, onetimeauth_verify, \
     onetimeauth_gen, ONETIMEAUTH_BYTES, ADDRTYPE_AUTH
+from shadowsocks.round_robin import RoundRobin
 
 
 BUF_SIZE = 65536
@@ -130,20 +131,20 @@ class UDPRelay(object):
         self._stat_callback = stat_callback
 
     def _get_a_server(self):
-        server = self._config['server']
-        server_port = self._config['server_port']
-        servers = self._config['upstream']
-        if servers:
-            server_and_password = random.choice(servers)
+        if self._config['upstream']:
+            server_and_password = RoundRobin.get_a_server()
             server = server_and_password['server']
             server_port = server_and_password['server_port']
             self._password = common.to_bytes(server_and_password['password'])
+        else:
+            server = self._config['server']
+            server_port = self._config['server_port']
 
         # if type(server_port) == list:
         #     server_port = random.choice(server_port)
         # if type(server) == list:
         #     server = random.choice(server)
-        logging.info('chosen server: %s:%d passwd:%s', server, server_port, self._password)
+        logging.debug('chosen server: %s:%d passwd:%s', server, server_port, self._password)
         return server, server_port
 
     def _close_client(self, client):
@@ -270,6 +271,8 @@ class UDPRelay(object):
             else:
                 shell.print_exception(e)
 
+    # local模式：
+    # server模式：
     def _handle_client(self, sock):
         data, r_addr = sock.recvfrom(BUF_SIZE)
         if not data:
@@ -278,6 +281,7 @@ class UDPRelay(object):
         if self._stat_callback:
             self._stat_callback(self._listen_port, len(data))
         if not self._is_local:
+            # is_server
             addrlen = len(r_addr[0])
             if addrlen > 255:
                 # drop
@@ -293,6 +297,7 @@ class UDPRelay(object):
             if not response:
                 return
         else:
+            # is_local
             try:
                 data, key, iv = cryptor.decrypt_all(self._password,
                                                     self._method, data,

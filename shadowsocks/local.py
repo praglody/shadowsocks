@@ -25,6 +25,7 @@ import signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 from shadowsocks import shell, daemon, eventloop, tcprelay, udprelay, asyncdns
+from shadowsocks.round_robin import RoundRobin
 
 
 @shell.exception_handle(self_=False, exit_code=1)
@@ -42,7 +43,8 @@ def main():
 
     logging.info("starting local at %s:%d" %
                  (config['local_address'], config['local_port']))
-
+    if config['upstream']:
+        RoundRobin.init(config['upstream'][:])
     dns_resolver = asyncdns.DNSResolver()
     tcp_server = tcprelay.TCPRelay(config, dns_resolver, True)
     udp_server = udprelay.UDPRelay(config, dns_resolver, True)
@@ -55,14 +57,17 @@ def main():
         logging.warn('received SIGQUIT, doing graceful shutting down..')
         tcp_server.close(next_tick=True)
         udp_server.close(next_tick=True)
+
     signal.signal(getattr(signal, 'SIGQUIT', signal.SIGTERM), handler)
 
     def int_handler(signum, _):
         sys.exit(1)
+
     signal.signal(signal.SIGINT, int_handler)
 
     daemon.set_user(config.get('user', None))
     loop.run()
+
 
 if __name__ == '__main__':
     main()

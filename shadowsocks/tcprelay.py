@@ -30,6 +30,7 @@ from shadowsocks import cryptor, eventloop, shell, common
 from shadowsocks.common import parse_header, onetimeauth_verify, \
     onetimeauth_gen, ONETIMEAUTH_BYTES, ONETIMEAUTH_CHUNK_BYTES, \
     ONETIMEAUTH_CHUNK_DATA_LEN, ADDRTYPE_AUTH
+from shadowsocks.round_robin import RoundRobin
 
 # we clear at most TIMEOUTS_CLEAN_SIZE timeouts each time
 TIMEOUTS_CLEAN_SIZE = 512
@@ -164,20 +165,20 @@ class TCPRelayHandler(object):
         return self._remote_address
 
     def _get_a_server(self):
-        server = self._config['server']
-        server_port = self._config['server_port']
-        servers = self._config['upstream']
-        if servers:
-            server_and_password = random.choice(servers)
+        if self._config['upstream']:
+            server_and_password = RoundRobin.get_a_server()
             server = server_and_password['server']
             server_port = server_and_password['server_port']
             self._password = common.to_bytes(server_and_password['password'])
+        else:
+            server = self._config['server']
+            server_port = self._config['server_port']
 
         # if type(server_port) == list:
         #     server_port = random.choice(server_port)
         # if type(server) == list:
         #     server = random.choice(server)
-        logging.info('chosen server: %s:%d passwd:%s', server, server_port, self._password)
+        logging.debug('chosen server: %s:%d passwd:%s', server, server_port, self._password)
         return server, server_port
 
     def _update_activity(self, data_len=0):
