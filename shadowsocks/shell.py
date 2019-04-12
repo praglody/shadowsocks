@@ -152,9 +152,12 @@ def check_config(config, is_local):
             sys.exit(2)
 
     if is_local and not config.get('password', None):
-        logging.error('password not specified')
-        print_help(is_local)
-        sys.exit(2)
+        if config.get('upstream', None):
+            config['password'] = 'password'
+        else:
+            logging.error('password not specified')
+            print_help(is_local)
+            sys.exit(2)
 
     if not is_local and not config.get('password', None) \
             and not config.get('port_password', None) \

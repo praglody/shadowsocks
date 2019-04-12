@@ -95,3 +95,29 @@ Apache License
 [PyPI version]:      https://img.shields.io/pypi/v/shadowsocks.svg?style=flat
 [Travis CI]:         https://travis-ci.org/shadowsocks/shadowsocks
 
+客户端负载均衡
+--------------
+
+```
+{
+    "upstream": [
+    	{"server":"45.76.102.109", "server_port":30,    "password":"your password", "weight":1},
+        {"server":"45.63.56.112",  "server_port":30001, "password":"your password", "weight":1}
+    ],
+    "local_address":"0.0.0.0",
+    "local_port":14213,
+    "method":"aes-256-cfb",
+    "timeout":600,
+    "fast_open":false,
+    "tunnel_remote":"8.8.8.8",
+    "dns_server":["8.8.8.8", "8.8.4.4"],
+    "tunnel_remote_port":53,
+    "tunnel_port":53
+}
+```
+
+运行
+
+```
+python shadowsocks/local.py -c config.json
+```
