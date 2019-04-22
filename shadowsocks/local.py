@@ -47,16 +47,16 @@ def main():
         RoundRobin.init(config['upstream'][:])
     dns_resolver = asyncdns.DNSResolver()
     tcp_server = tcprelay.TCPRelay(config, dns_resolver, True)
-    # udp_server = udprelay.UDPRelay(config, dns_resolver, True)
+    udp_server = udprelay.UDPRelay(config, dns_resolver, True)
     loop = eventloop.EventLoop()
     dns_resolver.add_to_loop(loop)
     tcp_server.add_to_loop(loop)
-    # udp_server.add_to_loop(loop)
+    udp_server.add_to_loop(loop)
 
     def handler(signum, _):
         logging.warn('received SIGQUIT, doing graceful shutting down..')
         tcp_server.close(next_tick=True)
-        # udp_server.close(next_tick=True)
+        udp_server.close(next_tick=True)
 
     signal.signal(getattr(signal, 'SIGQUIT', signal.SIGTERM), handler)
 
