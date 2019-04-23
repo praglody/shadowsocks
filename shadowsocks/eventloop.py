@@ -157,7 +157,7 @@ class EventLoop(object):
         else:
             raise Exception('can not find any available functions in select '
                             'package')
-        self._fdmap = {}  # (f, handler)
+        self._fdmap = {}  # key => f.fileno(), value => (f, handler)
         self._last_time = time.time()
         self._periodic_callbacks = []
         self._stopping = False

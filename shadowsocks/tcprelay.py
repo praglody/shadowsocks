@@ -777,6 +777,8 @@ class TCPRelay(object):
         if self._closed:
             raise Exception('already closed')
         self._eventloop = loop
+        # self._server_socket 是监听的 tcp 端口的 socket，将此 socket 放入事件驱动循环监听连接事件
+        # self 作为 handler 参数传入事件驱动循环，当有连接事件触发时，调用 self.handle_event 处理连接事件
         self._eventloop.add(self._server_socket,
                             eventloop.POLL_IN | eventloop.POLL_ERR, self)
         self._eventloop.add_periodic(self.handle_periodic)
@@ -835,6 +837,7 @@ class TCPRelay(object):
                 # clean up the timeout queue when it gets larger than half
                 # of the queue
                 self._timeouts = self._timeouts[pos:]
+                # 更新 handler 在 self._timeouts 中的索引值
                 for key in self._handler_to_timeouts:
                     self._handler_to_timeouts[key] -= pos
                 pos = 0
