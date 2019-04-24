@@ -781,6 +781,7 @@ class TCPRelay(object):
         # self 作为 handler 参数传入事件驱动循环，当有连接事件触发时，调用 self.handle_event 处理连接事件
         self._eventloop.add(self._server_socket,
                             eventloop.POLL_IN | eventloop.POLL_ERR, self)
+        # 注册回调函数，定期做一些工作，如清理超时的连接
         self._eventloop.add_periodic(self.handle_periodic)
 
     def remove_handler(self, handler):

@@ -216,6 +216,7 @@ class EventLoop(object):
                         handler.handle_event(sock, fd, event)
                     except (OSError, IOError) as e:
                         shell.print_exception(e)
+            # 如果发生了异常或者距离上次清理工作超过 TIMEOUT_PRECISION 秒，则调用各个回调函数清理资源
             now = time.time()
             if asap or now - self._last_time >= TIMEOUT_PRECISION:
                 for callback in self._periodic_callbacks:
