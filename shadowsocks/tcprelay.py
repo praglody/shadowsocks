@@ -664,30 +664,41 @@ class TCPRelayHandler(object):
     def handle_event(self, sock, event):
         # handle all events in this handler and dispatch them to methods
         if self._stage == STAGE_DESTROYED:
+            # 当前连接已销毁
             logging.debug('ignore handle_event: destroyed')
             return
         # order is important
         if sock == self._remote_sock:
+            # 对于客户端模式（is_local = True） , self._remote_sock 为 ss 客户端连接到 ss 服务器的 socket
+            # 对于服务器模式（is_local = False）, self._remote_sock 为 ss 服务器连接到目标服务器的 socket
             if event & eventloop.POLL_ERR:
+                # 触发 error 事件
                 self._on_remote_error()
                 if self._stage == STAGE_DESTROYED:
                     return
             if event & (eventloop.POLL_IN | eventloop.POLL_HUP):
+                # 触发可读事件
                 self._on_remote_read()
                 if self._stage == STAGE_DESTROYED:
                     return
             if event & eventloop.POLL_OUT:
+                # 触发可写事件
                 self._on_remote_write()
         elif sock == self._local_sock:
+            # 对于客户端模式（is_local = True） , self._local_sock 为用户连接到 ss 客户端的 socket
+            # 对于服务器模式（is_local = False）, self._local_sock 为ss客户端连接到 ss 服务器的 socket
             if event & eventloop.POLL_ERR:
+                # 触发 error 事件
                 self._on_local_error()
                 if self._stage == STAGE_DESTROYED:
                     return
             if event & (eventloop.POLL_IN | eventloop.POLL_HUP):
+                # 触发可读事件
                 self._on_local_read()
                 if self._stage == STAGE_DESTROYED:
                     return
             if event & eventloop.POLL_OUT:
+                # 触发可写事件
                 self._on_local_write()
         else:
             logging.warn('unknown socket')
