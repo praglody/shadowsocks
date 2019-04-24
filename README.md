@@ -121,3 +121,15 @@ Apache License
 ```
 python shadowsocks/local.py -c config.json
 ```
+
+
+日志展示
+
+```
+默认显示 INFO 级别以上的日志
+
+-v        显示 DEBUG 级别日志信息
+-vv       显示 VERBOSE 级别日志信息
+-q        显示 WARNING 级别日志信息
+-qq       显示 ERROR 级别日志信息
+```
