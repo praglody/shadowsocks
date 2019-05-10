@@ -1,3 +1,51 @@
+客户端负载均衡
+--------------
+
+主要是添加了upstream这个配置项，upstream里必须包含 server、server_port、password、weight 等配置，目前还不支持动态修改加密方式。
+
+这个主要是用来做同一服务器的多端口负载均衡，让流量分散到不同的端口，降低服务器端口被封的风险。
+
+```
+{
+    "upstream": [
+    	{"server":"45.76.102.109", "server_port":30,    "password":"your password", "weight":1},
+        {"server":"45.63.56.112",  "server_port":30001, "password":"your password", "weight":1}
+    ],
+    "local_address":"0.0.0.0",
+    "local_port":14213,
+    "method":"aes-256-cfb",
+    "timeout":600,
+    "fast_open":false,
+    "tunnel_remote":"8.8.8.8",
+    "dns_server":["8.8.8.8", "8.8.4.4"],
+    "tunnel_remote_port":53,
+    "tunnel_port":53
+}
+```
+
+运行
+
+```
+python shadowsocks/local.py -c config.json
+```
+
+
+日志展示
+
+```
+默认显示 INFO 级别以上的日志
+
+-v        显示 DEBUG 级别日志信息
+-vv       显示 VERBOSE 级别日志信息
+-q        显示 WARNING 级别日志信息
+-qq       显示 ERROR 级别日志信息
+```
+
+
+
+
+
+
 shadowsocks
 ===========
 
@@ -94,42 +142,3 @@ Apache License
 [PyPI]:              https://pypi.python.org/pypi/shadowsocks
 [PyPI version]:      https://img.shields.io/pypi/v/shadowsocks.svg?style=flat
 [Travis CI]:         https://travis-ci.org/shadowsocks/shadowsocks
-
-客户端负载均衡
---------------
-
-```
-{
-    "upstream": [
-    	{"server":"45.76.102.109", "server_port":30,    "password":"your password", "weight":1},
-        {"server":"45.63.56.112",  "server_port":30001, "password":"your password", "weight":1}
-    ],
-    "local_address":"0.0.0.0",
-    "local_port":14213,
-    "method":"aes-256-cfb",
-    "timeout":600,
-    "fast_open":false,
-    "tunnel_remote":"8.8.8.8",
-    "dns_server":["8.8.8.8", "8.8.4.4"],
-    "tunnel_remote_port":53,
-    "tunnel_port":53
-}
-```
-
-运行
-
-```
-python shadowsocks/local.py -c config.json
-```
-
-
-日志展示
-
-```
-默认显示 INFO 级别以上的日志
-
--v        显示 DEBUG 级别日志信息
--vv       显示 VERBOSE 级别日志信息
--q        显示 WARNING 级别日志信息
--qq       显示 ERROR 级别日志信息
-```
