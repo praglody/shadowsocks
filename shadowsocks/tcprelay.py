@@ -122,7 +122,7 @@ class TCPRelayHandler(object):
         self.tunnel_remote = config.get('tunnel_remote', "8.8.8.8")
         self.tunnel_remote_port = config.get('tunnel_remote_port', 53)
         self.tunnel_port = config.get('tunnel_port', 53)
-        self._is_tunnel = server._is_tunnel
+        self._is_tunnel = server._is_tunnel         # 这个值始终是False，在TCPRelay类中赋值
 
         # TCP Relay works as either sslocal or ssserver
         # if is_local, this is sslocal
@@ -506,6 +506,7 @@ class TCPRelayHandler(object):
         self._ota_chunk_idx += 1
         return data_len + sha110 + data
 
+    # remote connected, piping local and remote
     def _handle_stage_stream(self, data):
         if self._is_local:
             if self._ota_enable_session:
@@ -579,10 +580,12 @@ class TCPRelayHandler(object):
             return
         self._update_activity(len(data))
         if not is_local:
+            # 服务器模式，收到ss客户端发来的数据后，需要解密
             data = self._cryptor.decrypt(data)
             if not data:
                 return
         if self._stage == STAGE_STREAM:
+            # remote connected, piping local and remote
             self._handle_stage_stream(data)
             return
         elif is_local and self._stage == STAGE_INIT:
