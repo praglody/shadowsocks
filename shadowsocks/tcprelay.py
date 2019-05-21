@@ -885,7 +885,6 @@ class TCPRelay(object):
                     if self._config['verbose']:
                         traceback.print_exc()
         else:
-            # 应该不会走到这里才对，这个 self._server_socket 只是用来 accept 新的请求
             if sock:
                 handler = self._fd_to_handlers.get(fd, None)
                 if handler:

@@ -168,8 +168,8 @@ class EventLoop(object):
         return [(self._fdmap[fd][0], fd, event) for fd, event in events]
 
     def add(self, f, mode, handler):
-        fd = f.fileno()
-        self._fdmap[fd] = (f, handler)
+        fd = f.fileno()     # f 是一个 socket
+        self._fdmap[fd] = (f, handler)  # handler 是 TCPRelay 实例
         self._impl.register(fd, mode)
 
     def remove(self, f):
@@ -218,10 +218,11 @@ class EventLoop(object):
                 if handler is not None:
                     # 这个 handler 对应的就是 [TCPRelay.add_to_loop() -> self._eventloop.add()]
                     #   和 [TCPRelay.handle_event() -> TCPRelayHandler() -> self._loop.add()]
-                    #   中添加的 handler，这个handler分别指的是 TCPRelay 对象和 TCPRelayHandler 对象
+                    #   中添加的 handler，这个 handler 是一个 TCPRelay 实例
                     # udp 和 dns 同理
                     handler = handler[1]
                     try:
+                        # 通过 TCPRelay 的 handle_event 方法再去处理不同的 event
                         handler.handle_event(sock, fd, event)
                     except (OSError, IOError) as e:
                         shell.print_exception(e)
