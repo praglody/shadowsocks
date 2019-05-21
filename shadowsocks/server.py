@@ -37,15 +37,15 @@ def main():
 
     if config['port_password']:
         if config['password']:
-            logging.warn('warning: port_password should not be used with '
-                         'server_port and password. server_port and password '
-                         'will be ignored')
+            logging.warning('warning: port_password should not '
+                            'be used with server_port and password. '
+                            'server_port and password will be ignored')
     else:
         config['port_password'] = {}
         server_port = config['server_port']
         if type(server_port) == list:
             for a_server_port in server_port:
-                config['port_password'][a_server_port] = config['password']
+                config['port_password'][str(a_server_port)] = config['password']
         else:
             config['port_password'][str(server_port)] = config['password']
 
@@ -70,7 +70,7 @@ def main():
         a_config['server_port'] = int(port)
         a_config['password'] = password
         logging.info("starting server at %s:%d" %
-                     (a_config['server'], int(port)))
+                     (a_config['server'], a_config['server_port']))
         tcp_servers.append(tcprelay.TCPRelay(a_config, dns_resolver, False))
         udp_servers.append(udprelay.UDPRelay(a_config, dns_resolver, False))
 
@@ -98,6 +98,7 @@ def main():
             sys.exit(1)
 
     if int(config['workers']) > 1:
+        # 多进程模式
         if os.name == 'posix':
             children = []
             is_child = False
@@ -133,9 +134,10 @@ def main():
                 for child in children:
                     os.waitpid(child, 0)
         else:
-            logging.warn('worker is only available on Unix/Linux')
+            logging.warning('worker is only available on Unix/Linux')
             run_server()
     else:
+        # 单进程模式
         run_server()
 
 

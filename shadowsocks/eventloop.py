@@ -199,23 +199,35 @@ class EventLoop(object):
             except (OSError, IOError) as e:
                 if errno_from_exception(e) in (errno.EPIPE, errno.EINTR):
                     # EPIPE: Happens when the client closes the connection
+                    #        当客户端关闭连接时，触发这个错误
                     # EINTR: Happens when received a signal
+                    #        当收到 signal 时，触发这个错误
                     # handles them as soon as possible
+                    #        应该立即处理这两个错误
                     asap = True
                     logging.debug('poll:%s', e)
                 else:
+                    # 其它错误，写日志并结束本次循环
                     logging.error('poll:%s', e)
                     traceback.print_exc()
                     continue
 
             for sock, fd, event in events:
+                # self._fdmap 里面放了 { f.fileno(): (f, handler), }
                 handler = self._fdmap.get(fd, None)
                 if handler is not None:
+                    # 这个 handler 对应的就是 [TCPRelay.add_to_loop() -> self._eventloop.add()]
+                    #   和 [TCPRelay.handle_event() -> TCPRelayHandler() -> self._loop.add()]
+                    #   中添加的 handler，这个handler分别指的是 TCPRelay 对象和 TCPRelayHandler 对象
+                    # udp 和 dns 同理
                     handler = handler[1]
                     try:
                         handler.handle_event(sock, fd, event)
                     except (OSError, IOError) as e:
                         shell.print_exception(e)
+                else:
+                    # 理论上是不会出现 fd 不存在的情况
+                    pass
             # 如果发生了异常或者距离上次清理工作超过 TIMEOUT_PRECISION 秒，则调用各个回调函数清理资源
             now = time.time()
             if asap or now - self._last_time >= TIMEOUT_PRECISION:

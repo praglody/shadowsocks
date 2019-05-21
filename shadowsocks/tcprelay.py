@@ -113,8 +113,8 @@ class TCPRelayHandler(object):
     def __init__(self, server, fd_to_handlers, loop, local_sock, config,
                  dns_resolver, is_local):
         self._server = server
-        self._fd_to_handlers = fd_to_handlers
-        self._loop = loop
+        self._fd_to_handlers = fd_to_handlers   # TCPRelay's fd_to_handlers
+        self._loop = loop   # eventloop
         self._local_sock = local_sock
         self._remote_sock = None
         self._config = config
@@ -122,7 +122,7 @@ class TCPRelayHandler(object):
         self.tunnel_remote = config.get('tunnel_remote', "8.8.8.8")
         self.tunnel_remote_port = config.get('tunnel_remote_port', 53)
         self.tunnel_port = config.get('tunnel_port', 53)
-        self._is_tunnel = server._is_tunnel         # 这个值始终是False，在TCPRelay类中赋值
+        self._is_tunnel = server._is_tunnel # 这个值始终是False，在TCPRelay类中赋值
 
         # TCP Relay works as either sslocal or ssserver
         # if is_local, this is sslocal
@@ -148,11 +148,13 @@ class TCPRelayHandler(object):
         self._cryptor = cryptor.Cryptor(self._password,
                                         config['method'],
                                         config['crypto_path'])
-        fd_to_handlers[local_sock.fileno()] = self
+
+        self._fd_to_handlers[local_sock.fileno()] = self
         local_sock.setblocking(False)
         local_sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-        loop.add(local_sock, eventloop.POLL_IN | eventloop.POLL_ERR,
+        self._loop.add(local_sock, eventloop.POLL_IN | eventloop.POLL_ERR,
                  self._server)
+
         self.last_activity = 0
         self._update_activity()
 
@@ -883,12 +885,13 @@ class TCPRelay(object):
                     if self._config['verbose']:
                         traceback.print_exc()
         else:
+            # 应该不会走到这里才对，这个 self._server_socket 只是用来 accept 新的请求
             if sock:
                 handler = self._fd_to_handlers.get(fd, None)
                 if handler:
                     handler.handle_event(sock, event)
             else:
-                logging.warn('poll removed fd')
+                logging.warning('poll removed fd')
 
     def handle_periodic(self):
         if self._closed:
