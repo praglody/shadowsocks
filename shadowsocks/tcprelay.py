@@ -84,6 +84,14 @@ STAGE_DESTROYED = -1
 #    downstream:  from server to client direction
 #                 read remote and write to local
 
+# 对于 SS Server
+# STREAM_UP：   读取 SS Local 发来的数据，然后将数据转发到 target server（如 google 的服务器）
+# STREAM_DOWN： 接收 target server 的响应数据，然后回传给 SS Local
+
+# 对于 SS Local
+# STREAM_UP：   读取 client 发来的请求数据，然后将数据转发到 SS Server
+# STREAM_DOWN： 接收 SS Server 的响应数据，然后回传给 client
+
 STREAM_UP = 0
 STREAM_DOWN = 1
 
