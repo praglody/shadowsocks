@@ -556,15 +556,18 @@ class TCPRelayHandler(object):
 
     def _handle_stage_init(self, data):
         try:
+            # 检查握手的数据包
             self._check_auth_method(data)
         except BadSocksHeader:
+            # 数据包不是socks5协议
             self.destroy()
             return
         except NoAcceptableMethods:
+            # 不支持握手
             self._write_to_sock(b'\x05\xff', self._local_sock)
             self.destroy()
             return
-
+        # 握手回包
         self._write_to_sock(b'\x05\00', self._local_sock)
         self._stage = STAGE_ADDR
 
@@ -573,23 +576,24 @@ class TCPRelayHandler(object):
         # each stage
         if not self._local_sock:
             return
-        is_local = self._is_local
         data = None
-        if is_local:
+        if self._is_local:
             buf_size = UP_STREAM_BUF_SIZE
         else:
             buf_size = DOWN_STREAM_BUF_SIZE
         try:
+            # 从 local socket 读取 buf_size 字节数据
             data = self._local_sock.recv(buf_size)
         except (OSError, IOError) as e:
             if eventloop.errno_from_exception(e) in \
                     (errno.ETIMEDOUT, errno.EAGAIN, errno.EWOULDBLOCK):
                 return
         if not data:
+            # 如果没读到数据，则销毁当前对象
             self.destroy()
             return
         self._update_activity(len(data))
-        if not is_local:
+        if not self._is_local:
             # 服务器模式，收到ss客户端发来的数据后，需要解密
             data = self._cryptor.decrypt(data)
             if not data:
@@ -598,17 +602,19 @@ class TCPRelayHandler(object):
             # remote connected, piping local and remote
             self._handle_stage_stream(data)
             return
-        elif is_local and self._stage == STAGE_INIT:
+        elif self._is_local and self._stage == STAGE_INIT:
             # jump over socks5 init
+            # ss-local 会首先进到这个分支，处理握手事宜
             if self._is_tunnel:
+                # 不会出发这个条件的
                 self._handle_stage_addr(data)
                 return
             else:
                 self._handle_stage_init(data)
         elif self._stage == STAGE_CONNECTING:
             self._handle_stage_connecting(data)
-        elif (is_local and self._stage == STAGE_ADDR) or \
-                (not is_local and self._stage == STAGE_INIT):
+        elif (self._is_local and self._stage == STAGE_ADDR) or \
+                (not self._is_local and self._stage == STAGE_INIT):
             self._handle_stage_addr(data)
 
     def _on_remote_read(self):
@@ -707,6 +713,7 @@ class TCPRelayHandler(object):
                     return
             if event & (eventloop.POLL_IN | eventloop.POLL_HUP):
                 # 触发可读事件
+                # ss-local 会先读取客户端的数据进行握手
                 self._on_local_read()
                 if self._stage == STAGE_DESTROYED:
                     return
@@ -728,6 +735,7 @@ class TCPRelayHandler(object):
             # this couldn't happen
             logging.debug('already destroyed')
             return
+        # 销毁连接时，将状态标识设置为 STAGE_DESTROYED
         self._stage = STAGE_DESTROYED
         if self._remote_address:
             logging.debug('destroy: %s:%d' %
