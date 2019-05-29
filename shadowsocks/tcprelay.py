@@ -325,8 +325,10 @@ class TCPRelayHandler(object):
                 data = common.add_header(tunnel_remote,
                                          tunnel_remote_port, data)
             else:
+                # 判断连接的类型
                 cmd = common.ord(data[1])
                 if cmd == CMD_UDP_ASSOCIATE:
+                    # UDP连接
                     logging.debug('UDP associate')
                     if self._local_sock.family == socket.AF_INET6:
                         header = b'\x05\x00\x00\x04'
@@ -342,16 +344,19 @@ class TCPRelayHandler(object):
                     # just wait for the client to disconnect
                     return
                 elif cmd == CMD_CONNECT:
+                    # TCP 连接
                     # just trim VER CMD RSV
                     data = data[3:]
                 else:
                     logging.error('unknown command %d', cmd)
                     self.destroy()
                     return
+        # 解析目标服务器地址类型、地址、端口、请求头长度
         header_result = parse_header(data)
         if header_result is None:
             raise Exception('can not parse header')
-        addrtype, remote_addr, remote_port, header_length = header_result
+        else:
+            addrtype, remote_addr, remote_port, header_length = header_result
         logging.info('connecting %s:%d from %s:%d' %
                      (common.to_str(remote_addr), remote_port,
                       self._client_address[0], self._client_address[1]))
@@ -376,12 +381,18 @@ class TCPRelayHandler(object):
                 header_length += ONETIMEAUTH_BYTES
         self._remote_address = (common.to_str(remote_addr), remote_port)
         # pause reading
-        self._update_stream(STREAM_UP, WAIT_STATUS_WRITING)
-        self._stage = STAGE_DNS
+        self._update_stream(STREAM_UP, WAIT_STATUS_WRITING)  # 注册 epoll 事件
+        self._stage = STAGE_DNS  # 将状态标识设置为 STAGE_DNS
         if self._is_local:
             # jump over socks5 response
             if not self._is_tunnel:
                 # forward address to remote
+                # 给客户端发送响应包建立连接
+                # +----+-----+-------+------+----------+----------+
+                # |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+                # +----+-----+-------+------+----------+----------+
+                # | 1  |  1  |   1   |  1   | Variable |    2     |
+                # +----+-----+-------+------+----------+----------+
                 self._write_to_sock((b'\x05\x00\x00\x01'
                                      b'\x00\x00\x00\x00\x10\x10'),
                                     self._local_sock)
@@ -619,7 +630,7 @@ class TCPRelayHandler(object):
             self._handle_stage_connecting(data)
         elif (self._is_local and self._stage == STAGE_ADDR) or \
                 (not self._is_local and self._stage == STAGE_INIT):
-            # == ss-local step.1 == 首先进到这个分支，处理握手
+            # == ss-local step.2 == 读取并处理第二个连接请求
             self._handle_stage_addr(data)
 
     def _on_remote_read(self):
