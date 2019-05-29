@@ -41,7 +41,7 @@ def onetimeauth_verify(_hash, data, key):
 def onetimeauth_gen(data, key):
     return sha1_hmac(key, data)[:ONETIMEAUTH_BYTES]
 
-
+# 如果 s 是 int 类型，直接返回，否则取字符串对应的 ascii 码
 def compat_ord(s):
     if type(s) == int:
         return s

@@ -130,7 +130,7 @@ class TCPRelayHandler(object):
         self.tunnel_remote = config.get('tunnel_remote', "8.8.8.8")
         self.tunnel_remote_port = config.get('tunnel_remote_port', 53)
         self.tunnel_port = config.get('tunnel_port', 53)
-        self._is_tunnel = server._is_tunnel # 这个值始终是False，在TCPRelay类中赋值
+        self._is_tunnel = False  # server._is_tunnel #这个值始终是False，在TCPRelay类中赋值
 
         # TCP Relay works as either sslocal or ssserver
         # if is_local, this is sslocal
@@ -541,9 +541,11 @@ class TCPRelayHandler(object):
             logging.warning('unsupported SOCKS protocol version ' +
                             str(socks_version))
             raise BadSocksHeader
+        # 校验数据长度
         if nmethods < 1 or len(data) != nmethods + 2:
             logging.warning('NMETHODS and number of METHODS mismatch')
             raise BadSocksHeader
+        # 检查客户端是否支持不加密的认证方式
         noauth_exist = False
         for method in data[2:]:
             if common.ord(method) == METHOD_NOAUTH:
@@ -559,16 +561,18 @@ class TCPRelayHandler(object):
             # 检查握手的数据包
             self._check_auth_method(data)
         except BadSocksHeader:
-            # 数据包不是socks5协议
+            # 数据包不是 SOCKS5 协议
             self.destroy()
             return
         except NoAcceptableMethods:
-            # 不支持握手
+            # 不支持握手，发送不支持任何认证方式的回包
+            # \x05 表示 SOCKS5 协议，\xff 表示服务器不支持客户端任何一种认证方式
             self._write_to_sock(b'\x05\xff', self._local_sock)
             self.destroy()
             return
-        # 握手回包
-        self._write_to_sock(b'\x05\00', self._local_sock)
+        # 握手回包，\x05 表示 SOCKS5 协议，\x00 表示服务器支持不加密的认证方式
+        self._write_to_sock(b'\x05\x00', self._local_sock)
+        # 将状态标识设置为 STAGE_ADDR
         self._stage = STAGE_ADDR
 
     def _on_local_read(self):
@@ -604,9 +608,9 @@ class TCPRelayHandler(object):
             return
         elif self._is_local and self._stage == STAGE_INIT:
             # jump over socks5 init
-            # ss-local 会首先进到这个分支，处理握手事宜
+            # == ss-local step.1 == 首先进到这个分支，处理握手
             if self._is_tunnel:
-                # 不会出发这个条件的
+                # 不会触发这个条件的
                 self._handle_stage_addr(data)
                 return
             else:
@@ -615,6 +619,7 @@ class TCPRelayHandler(object):
             self._handle_stage_connecting(data)
         elif (self._is_local and self._stage == STAGE_ADDR) or \
                 (not self._is_local and self._stage == STAGE_INIT):
+            # == ss-local step.1 == 首先进到这个分支，处理握手
             self._handle_stage_addr(data)
 
     def _on_remote_read(self):
