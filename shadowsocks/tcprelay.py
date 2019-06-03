@@ -268,16 +268,19 @@ class TCPRelayHandler(object):
                 logging.error('write_all_to_sock:unknown socket')
         return True
 
+    # 将数据写到待发送队列 self._data_to_write_to_remote
     def _handle_stage_connecting(self, data):
         if not self._is_local:
             if self._ota_enable_session:
                 self._ota_chunk_data(data,
                                      self._data_to_write_to_remote.append)
             else:
+                # ss-server,直接将数据写到待发送队列
                 self._data_to_write_to_remote.append(data)
             return
         if self._ota_enable_session:
             data = self._ota_chunk_data_gen(data)
+        # 加密数据，并写到待发送队列
         data = self._cryptor.encrypt(data)
         self._data_to_write_to_remote.append(data)
 
