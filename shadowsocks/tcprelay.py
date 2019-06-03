@@ -440,6 +440,7 @@ class TCPRelayHandler(object):
         remote_sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         return remote_sock
 
+    # 创建连接到远程的socket
     @shell.exception_handle(self_=True)
     def _handle_dns_resolved(self, result, error):
         if error:
@@ -612,7 +613,7 @@ class TCPRelayHandler(object):
             return
         self._update_activity(len(data))
         if not self._is_local:
-            # 服务器模式，收到ss客户端发来的数据后，需要解密
+            # ss-server，收到ss客户端发来的数据后，需要解密
             data = self._cryptor.decrypt(data)
             if not data:
                 return
@@ -630,6 +631,7 @@ class TCPRelayHandler(object):
             else:
                 self._handle_stage_init(data)
         elif self._stage == STAGE_CONNECTING:
+            # == ss-local step.3 == 接收并加密客户端的请求数据，写到待发送队列
             self._handle_stage_connecting(data)
         elif (self._is_local and self._stage == STAGE_ADDR) or \
                 (not self._is_local and self._stage == STAGE_INIT):
